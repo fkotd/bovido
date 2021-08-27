@@ -3,7 +3,18 @@ use bevy::{input::system::exit_on_esc_system, prelude::*};
 const WINDOW_WIDTH: f32 = 800.;
 const WINDOW_HEIGHT: f32 = 600.;
 
+enum Direction {
+    Up,
+    Down,
+}
+
+struct Game {
+    has_ball: bool,
+}
 struct Character;
+struct Ball {
+    direction: Direction,
+}
 
 fn main() {
     App::build()
@@ -18,6 +29,7 @@ fn main() {
         .add_system(exit_on_esc_system.system())
         .add_system(throw_ball.system())
         .add_system(character_movement.system())
+        .add_system(ball_movement.system())
         .run();
 }
 
@@ -36,63 +48,61 @@ fn setup(
 
     for i in 0..width {
         for j in 0..height {
-            commands
-                .spawn_bundle(SpriteBundle {
-                    material: materials.add(ground_texture_handle.clone().into()),
-                    transform: Transform::from_translation(Vec3::new(
-                            (i * tile_size) as f32,
-                            (-j * tile_size) as f32,
-                            0.
-                    )),
-                    ..Default::default()
-                });
+            commands.spawn_bundle(SpriteBundle {
+                material: materials.add(ground_texture_handle.clone().into()),
+                transform: Transform::from_translation(Vec3::new(
+                    (i * tile_size) as f32,
+                    (-j * tile_size) as f32,
+                    0.,
+                )),
+                ..Default::default()
+            });
         }
     }
-    
+
     commands
         .spawn_bundle(SpriteBundle {
             material: materials.add(character_a_texture_handle.into()),
             transform: Transform::from_translation(Vec3::new(
-                    0.,
-                    ((-tile_size * height) + tile_size) as f32,
-                    0.,
+                0.,
+                ((-tile_size * height) + tile_size) as f32,
+                0.,
             )),
             ..Default::default()
         })
         .insert(Character);
 
-    commands
-        .spawn_bundle(SpriteBundle {
-            material: materials.add(character_b_texture_handle.into()),
-            transform: Transform::from_translation(Vec3::new(
-                    ((tile_size * width / 2) - tile_size) as f32,
-                    0.,
-                    0.,
-            )),
-            ..Default::default()
-        });
+    commands.spawn_bundle(SpriteBundle {
+        material: materials.add(character_b_texture_handle.into()),
+        transform: Transform::from_translation(Vec3::new(
+            ((tile_size * width / 2) - tile_size) as f32,
+            0.,
+            0.,
+        )),
+        ..Default::default()
+    });
 
     commands.spawn_bundle(OrthographicCameraBundle::new_2d());
 }
 
 fn character_movement(
     keyboard_input: Res<Input<KeyCode>>,
-    mut character_positions: Query<&mut Transform, With<Character>>
+    mut character_positions: Query<&mut Transform, With<Character>>,
 ) {
     for mut transform in character_positions.iter_mut() {
         if keyboard_input.pressed(KeyCode::Left) {
-            transform.translation.x -=2.;
+            transform.translation.x -= 2.;
         }
         if keyboard_input.pressed(KeyCode::Right) {
-            transform.translation.x +=2.;
+            transform.translation.x += 2.;
         }
         if keyboard_input.pressed(KeyCode::Down) {
-            transform.translation.y -=2.;
+            transform.translation.y -= 2.;
         }
         if keyboard_input.pressed(KeyCode::Up) {
-            transform.translation.y +=2.;
+            transform.translation.y += 2.;
         }
-    } 
+    }
 }
 
 fn throw_ball(
@@ -111,7 +121,21 @@ fn throw_ball(
                     material: materials.add(ball_texture_handle.into()),
                     transform: transform.clone(),
                     ..Default::default()
+                })
+                .insert(Ball {
+                    direction: Direction::Up,
                 });
-        }     
+        }
+    }
+}
+
+fn ball_movement(
+    mut ball_positions: Query<(&mut Transform, &Ball)>
+) {
+    for (mut transform, ball) in ball_positions.iter_mut() {
+        match ball.direction {
+            Direction::Up => transform.translation.y += 5.,
+            Direction::Down => transform.translation.y -= 5.,
+        }
     }
 }
