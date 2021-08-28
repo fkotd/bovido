@@ -8,13 +8,16 @@ enum Direction {
     Down,
 }
 
-struct Game {
-    has_ball: bool,
+struct Character {
+    speed: f32,
 }
-struct Character;
+
 struct Ball {
     direction: Direction,
+    max_speed: f32,
 }
+
+struct ThrowBallEvent();
 
 fn main() {
     App::build()
@@ -26,6 +29,7 @@ fn main() {
         })
         .add_plugins(DefaultPlugins)
         .add_startup_system(setup.system())
+        .add_event::<ThrowBallEvent>()
         .add_system(exit_on_esc_system.system())
         .add_system(throw_ball.system())
         .add_system(character_movement.system())
@@ -70,7 +74,7 @@ fn setup(
             )),
             ..Default::default()
         })
-        .insert(Character);
+        .insert(Character { speed: 150. });
 
     commands.spawn_bundle(SpriteBundle {
         material: materials.add(character_b_texture_handle.into()),
@@ -87,20 +91,27 @@ fn setup(
 
 fn character_movement(
     keyboard_input: Res<Input<KeyCode>>,
-    mut character_positions: Query<&mut Transform, With<Character>>,
+    time: Res<Time>,
+    mut character_positions: Query<(&mut Transform, &Character)>,
+    mut throw_ball_event: EventReader<ThrowBallEvent>,
 ) {
-    for mut transform in character_positions.iter_mut() {
+    for event in throw_ball_event.iter() {
+        eprintln!("We are throwing a ball!");
+        return
+    }
+
+    for (mut transform, character) in character_positions.iter_mut() {
         if keyboard_input.pressed(KeyCode::Left) {
-            transform.translation.x -= 2.;
+            transform.translation.x -= character.speed * time.delta_seconds();
         }
         if keyboard_input.pressed(KeyCode::Right) {
-            transform.translation.x += 2.;
+            transform.translation.x += character.speed * time.delta_seconds();
         }
         if keyboard_input.pressed(KeyCode::Down) {
-            transform.translation.y -= 2.;
+            transform.translation.y -= character.speed * time.delta_seconds();
         }
         if keyboard_input.pressed(KeyCode::Up) {
-            transform.translation.y += 2.;
+            transform.translation.y += character.speed * time.delta_seconds();
         }
     }
 }
@@ -111,8 +122,13 @@ fn throw_ball(
     mut materials: ResMut<Assets<ColorMaterial>>,
     character_position: Query<&Transform, With<Character>>,
     keyboard_input: Res<Input<KeyCode>>,
+    mut throw_ball_event: EventWriter<ThrowBallEvent>,
 ) {
     if keyboard_input.pressed(KeyCode::E) {
+        throw_ball_event.send(ThrowBallEvent());
+    }
+
+    if keyboard_input.just_released(KeyCode::E) {
         for transform in character_position.iter() {
             let ball_texture_handle = asset_server.load("sprites/ball.png");
 
@@ -124,18 +140,17 @@ fn throw_ball(
                 })
                 .insert(Ball {
                     direction: Direction::Up,
+                    max_speed: 300.,
                 });
         }
     }
 }
 
-fn ball_movement(
-    mut ball_positions: Query<(&mut Transform, &Ball)>
-) {
+fn ball_movement(time: Res<Time>, mut ball_positions: Query<(&mut Transform, &Ball)>) {
     for (mut transform, ball) in ball_positions.iter_mut() {
         match ball.direction {
-            Direction::Up => transform.translation.y += 5.,
-            Direction::Down => transform.translation.y -= 5.,
+            Direction::Up => transform.translation.y += ball.max_speed * time.delta_seconds(),
+            Direction::Down => transform.translation.y -= ball.max_speed * time.delta_seconds(),
         }
     }
 }
