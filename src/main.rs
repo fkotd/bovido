@@ -12,9 +12,10 @@ struct Character {
 }
 
 struct Projectile {
-    speed: Vec2,
-    throwing_angle: f32,
+    velocity: Vec2,
 }
+
+struct Gravity(f32);
 
 struct ThrowBallEvent();
 
@@ -69,8 +70,8 @@ fn setup(
         .spawn_bundle(SpriteBundle {
             material: materials.add(character_a_texture_handle.into()),
             transform: Transform::from_translation(Vec3::new(
-                (- court_x_translation) as f32,
-                (- court_height / 2 + TILE_SIZE) as f32,
+                (-court_x_translation) as f32,
+                (-court_height / 2 + TILE_SIZE) as f32,
                 0.,
             )),
             ..Default::default()
@@ -81,7 +82,7 @@ fn setup(
     commands.spawn_bundle(SpriteBundle {
         material: materials.add(character_b_texture_handle.into()),
         transform: Transform::from_translation(Vec3::new(
-            (- court_x_translation - TILE_SIZE) as f32,
+            (-court_x_translation - TILE_SIZE) as f32,
             (court_height / 2) as f32,
             0.,
         )),
@@ -134,6 +135,17 @@ fn throw_ball(
         for transform in character_position.iter() {
             let ball_texture_handle = asset_server.load("sprites/ball.png");
 
+            // TODO: get from player input
+            let parabola_half_distance = 60.;
+            let parabola_height = 40.;
+
+            let initial_velocity_x = 100.;
+            let initial_velocity_y =
+                (2. * parabola_height * initial_velocity_x) / parabola_half_distance;
+
+            let gravity = (-2. * parabola_height * initial_velocity_x * initial_velocity_x)
+                / (parabola_half_distance * parabola_half_distance);
+
             commands
                 .spawn_bundle(SpriteBundle {
                     material: materials.add(ball_texture_handle.into()),
@@ -141,15 +153,20 @@ fn throw_ball(
                     ..Default::default()
                 })
                 .insert(Projectile {
-                    speed: Vec2::new(0., 300.),
-                    throwing_angle: 45.,
-                });
+                    velocity: Vec2::new(initial_velocity_x, initial_velocity_y),
+                })
+                .insert(Gravity(gravity));
         }
     }
 }
 
-fn ball_movement(time: Res<Time>, mut ball_positions: Query<(&mut Transform, &Projectile)>) {
-    for (mut transform, projectile) in ball_positions.iter_mut() {
-        transform.translation.y += projectile.speed.y * projectile.throwing_angle.cos() * time.delta_seconds();
+fn ball_movement(time: Res<Time>, mut ball: Query<(&mut Transform, &mut Projectile, &Gravity)>) {
+    for (mut transform, mut projectile, gravity) in ball.iter_mut() {
+        let delta = time.delta_seconds();
+
+        transform.translation.x += projectile.velocity.x * delta + (gravity.0 * delta * delta / 2.);
+        transform.translation.y += projectile.velocity.y * delta + (gravity.0 * delta * delta / 2.);
+
+        projectile.velocity.y += gravity.0 * delta;
     }
 }
