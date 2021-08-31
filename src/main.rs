@@ -1,20 +1,19 @@
 use bevy::{input::system::exit_on_esc_system, prelude::*};
 
-const WINDOW_WIDTH: f32 = 800.;
-const WINDOW_HEIGHT: f32 = 600.;
-
-enum Direction {
-    Up,
-    Down,
-}
+const WINDOW_WIDTH: f32 = 640.;
+const WINDOW_HEIGHT: f32 = 480.;
+const COURT_WIDTH: i32 = 5;
+const COURT_HEIGHT: i32 = 9;
+const COURT_X_TRANSLATION: i32 = 2;
+const TILE_SIZE: i32 = 32;
 
 struct Character {
     speed: f32,
 }
 
-struct Ball {
-    direction: Direction,
-    max_speed: f32,
+struct Projectile {
+    speed: Vec2,
+    throwing_angle: f32,
 }
 
 struct ThrowBallEvent();
@@ -46,17 +45,18 @@ fn setup(
     let character_b_texture_handle = asset_server.load("sprites/character_b.png");
     let ground_texture_handle = asset_server.load("maps/ground_top.png");
 
-    let width = 5;
-    let height = 8;
-    let tile_size = 32;
+    // create court
+    let court_height = COURT_HEIGHT * TILE_SIZE;
+    let court_width = COURT_WIDTH * TILE_SIZE;
+    let court_x_translation = COURT_X_TRANSLATION * TILE_SIZE;
 
-    for i in 0..width {
-        for j in 0..height {
+    for i in 0..COURT_WIDTH {
+        for j in 0..COURT_HEIGHT {
             commands.spawn_bundle(SpriteBundle {
                 material: materials.add(ground_texture_handle.clone().into()),
                 transform: Transform::from_translation(Vec3::new(
-                    (i * tile_size) as f32,
-                    (-j * tile_size) as f32,
+                    ((i * TILE_SIZE) - (court_width / 2) - court_x_translation) as f32,
+                    ((-j * TILE_SIZE) + (court_height / 2)) as f32,
                     0.,
                 )),
                 ..Default::default()
@@ -64,23 +64,25 @@ fn setup(
         }
     }
 
+    // create player character
     commands
         .spawn_bundle(SpriteBundle {
             material: materials.add(character_a_texture_handle.into()),
             transform: Transform::from_translation(Vec3::new(
-                0.,
-                ((-tile_size * height) + tile_size) as f32,
+                (- court_x_translation) as f32,
+                (- court_height / 2 + TILE_SIZE) as f32,
                 0.,
             )),
             ..Default::default()
         })
         .insert(Character { speed: 150. });
 
+    // create opponent character
     commands.spawn_bundle(SpriteBundle {
         material: materials.add(character_b_texture_handle.into()),
         transform: Transform::from_translation(Vec3::new(
-            ((tile_size * width / 2) - tile_size) as f32,
-            0.,
+            (- court_x_translation - TILE_SIZE) as f32,
+            (court_height / 2) as f32,
             0.,
         )),
         ..Default::default()
@@ -97,7 +99,7 @@ fn character_movement(
 ) {
     for event in throw_ball_event.iter() {
         eprintln!("We are throwing a ball!");
-        return
+        return;
     }
 
     for (mut transform, character) in character_positions.iter_mut() {
@@ -138,19 +140,16 @@ fn throw_ball(
                     transform: transform.clone(),
                     ..Default::default()
                 })
-                .insert(Ball {
-                    direction: Direction::Up,
-                    max_speed: 300.,
+                .insert(Projectile {
+                    speed: Vec2::new(0., 300.),
+                    throwing_angle: 45.,
                 });
         }
     }
 }
 
-fn ball_movement(time: Res<Time>, mut ball_positions: Query<(&mut Transform, &Ball)>) {
-    for (mut transform, ball) in ball_positions.iter_mut() {
-        match ball.direction {
-            Direction::Up => transform.translation.y += ball.max_speed * time.delta_seconds(),
-            Direction::Down => transform.translation.y -= ball.max_speed * time.delta_seconds(),
-        }
+fn ball_movement(time: Res<Time>, mut ball_positions: Query<(&mut Transform, &Projectile)>) {
+    for (mut transform, projectile) in ball_positions.iter_mut() {
+        transform.translation.y += projectile.speed.y * projectile.throwing_angle.cos() * time.delta_seconds();
     }
 }
