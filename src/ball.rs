@@ -61,6 +61,22 @@ fn throw_ball(
                     transform: cartesian.transform.clone(),
                 })
                 .insert(Gravity(gravity));
+
+            let target_texture_handle = asset_server.load("sprites/target.png");
+
+            commands
+                .spawn_bundle(SpriteBundle {
+                    material: materials.add(target_texture_handle.into()),
+                    transform: transform.clone(),
+                    ..Default::default()
+                })
+                .insert(CartesianTransform {
+                    transform: Transform::from_translation(Vec3::new(
+                        cartesian.transform.translation.x + 16.,
+                        cartesian.transform.translation.y + (parabola_half_distance * 2.) - 16.,
+                        0.,
+                    )),
+                });
         }
     }
 }
@@ -86,6 +102,8 @@ fn move_ball(
     }
 }
 
+// TODO: apply the height for the ball in another system and make a unique system for
+// cartesian_to_iso
 fn cartesian_to_iso(mut ball: Query<(&mut Transform, &CartesianTransform), With<Projectile>>) {
     for (mut transform, cartesian) in ball.iter_mut() {
         transform.translation.x =

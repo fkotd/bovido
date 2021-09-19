@@ -1,7 +1,7 @@
-use bevy::prelude::*;
+use crate::ball::Projectile;
 use crate::cartesian::CartesianTransform;
 use crate::events::ThrowBallEvent;
-use crate::ball::Projectile;
+use bevy::prelude::*;
 
 pub struct CharacterPlugin;
 
@@ -51,8 +51,8 @@ fn move_character(
     mut throw_ball_event: EventReader<ThrowBallEvent>,
 ) {
     for _event in throw_ball_event.iter() {
-    // eprintln!("We are throwing a ball!");
-    return;
+        // eprintln!("We are throwing a ball!");
+        return;
     }
 
     for (mut cartesian, character) in character_positions.iter_mut() {
