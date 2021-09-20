@@ -18,6 +18,8 @@ pub struct Projectile {
     start_height: f32,
 }
 
+pub struct Target();
+
 struct Gravity(f32);
 
 fn throw_ball(
@@ -72,11 +74,12 @@ fn throw_ball(
                 })
                 .insert(CartesianTransform {
                     transform: Transform::from_translation(Vec3::new(
-                        cartesian.transform.translation.x + 16.,
-                        cartesian.transform.translation.y + (parabola_half_distance * 2.) - 16.,
+                        cartesian.transform.translation.x,
+                        cartesian.transform.translation.y + (parabola_half_distance * 2.),
                         0.,
                     )),
-                });
+                })
+                .insert(Target());
         }
     }
 }
@@ -112,8 +115,7 @@ fn cartesian_to_iso(mut ball: Query<(&mut Transform, &CartesianTransform), With<
             (cartesian.transform.translation.y - cartesian.transform.translation.x) / 2.;
 
         // TODO: cleaner way to do that?
-        transform.translation.y += cartesian.transform.translation.z.sqrt()
-            * cartesian.transform.translation.z.sqrt()
-            - 10.;
+        transform.translation.y +=
+            cartesian.transform.translation.z.sqrt() * cartesian.transform.translation.z.sqrt();
     }
 }
