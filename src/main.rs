@@ -1,5 +1,6 @@
 use ball::BallPlugin;
 use bevy::{input::system::exit_on_esc_system, prelude::*};
+use cartesian::CartesianPlugin;
 use character::CharacterPlugin;
 use court::CourtPlugin;
 use events::EventsPlugin;
@@ -26,6 +27,7 @@ fn main() {
         .add_plugin(BallPlugin)
         .add_plugin(CharacterPlugin)
         .add_plugin(CourtPlugin)
+        .add_plugin(CartesianPlugin)
         .add_plugin(EventsPlugin)
         .add_startup_system(setup.system())
         .add_system(exit_on_esc_system.system())

@@ -9,7 +9,7 @@ impl Plugin for BallPlugin {
     fn build(&self, app: &mut AppBuilder) {
         app.add_system(throw_ball.system())
             .add_system(move_ball.system())
-            .add_system(cartesian_to_iso.system());
+            .add_system(add_ball_height.system().after("cartesian_to_iso"));
     }
 }
 
@@ -105,16 +105,8 @@ fn move_ball(
     }
 }
 
-// TODO: apply the height for the ball in another system and make a unique system for
-// cartesian_to_iso
-fn cartesian_to_iso(mut ball: Query<(&mut Transform, &CartesianTransform), With<Projectile>>) {
+fn add_ball_height(mut ball: Query<(&mut Transform, &CartesianTransform), With<Projectile>>) {
     for (mut transform, cartesian) in ball.iter_mut() {
-        transform.translation.x =
-            cartesian.transform.translation.x + cartesian.transform.translation.y;
-        transform.translation.y =
-            (cartesian.transform.translation.y - cartesian.transform.translation.x) / 2.;
-
-        // TODO: cleaner way to do that?
         transform.translation.y +=
             cartesian.transform.translation.z.sqrt() * cartesian.transform.translation.z.sqrt();
     }

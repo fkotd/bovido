@@ -1,4 +1,4 @@
-use crate::ball::{Projectile, Target};
+use crate::ball::{Target};
 use crate::cartesian::CartesianTransform;
 use crate::events::ThrowBallEvent;
 use bevy::prelude::*;
@@ -9,8 +9,7 @@ impl Plugin for CharacterPlugin {
     fn build(&self, app: &mut AppBuilder) {
         app.add_startup_system(create_characters.system())
             .add_system(move_character.system())
-            .add_system(move_opponent.system())
-            .add_system(cartesian_to_iso.system());
+            .add_system(move_opponent.system());
     }
 }
 
@@ -90,14 +89,5 @@ fn move_opponent(
 
             opponent_cartesian.transform.translation += direction
         }
-    }
-}
-
-fn cartesian_to_iso(mut ball: Query<(&mut Transform, &CartesianTransform), Without<Projectile>>) {
-    for (mut transform, cartesian) in ball.iter_mut() {
-        transform.translation.x =
-            cartesian.transform.translation.x + cartesian.transform.translation.y;
-        transform.translation.y =
-            (cartesian.transform.translation.y - cartesian.transform.translation.x) / 2.;
     }
 }
