@@ -18,5 +18,6 @@ fn cartesian_to_iso(mut q: Query<(&mut Transform, &CartesianTransform)>) {
             cartesian.transform.translation.x + cartesian.transform.translation.y;
         transform.translation.y =
             (cartesian.transform.translation.y - cartesian.transform.translation.x) / 2.;
+        transform.translation.z = cartesian.transform.translation.z;
     }
 }
